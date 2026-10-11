@@ -11,3 +11,7 @@
 .catalog-name{font-weight:700}.catalog-desc{font-size:.82rem;color:var(--muted);margin-top:3px}.catalog-prices{text-align:right;font-size:.9rem}.catalog-prices strong{display:block;color:var(--accent)}
 .catalog-actions{display:flex;gap:7px;margin-top:8px;justify-content:flex-end}.catalog-item .small-btn{font-size:.78rem}
 @media(max-width:600px){.catalog-item{grid-template-columns:1fr}.catalog-prices{text-align:left}.catalog-actions{justify-content:flex-start}}
+
+
+/* Selector d'estat directament a la fitxa de comanda */
+.order-status-control{margin-top:10px;max-width:260px}.order-status-label{display:block;color:var(--muted);font-size:.76rem;margin-bottom:5px}.order-status-select{width:100%;background:#111;border:1px solid #393939;border-radius:8px;color:var(--text);padding:8px 10px;font:inherit;font-size:.85rem}.order-status-select:disabled{opacity:.65;cursor:wait}

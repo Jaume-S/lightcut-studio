@@ -353,8 +353,36 @@ function renderOrders() {
       const title = document.createElement("div"); title.className = "order-title"; title.textContent = o.client || "Client sense nom";
       const meta = document.createElement("div"); meta.className = "order-meta";
       meta.textContent = `${o.eventType || "Encàrrec"} · ${o.dueDate ? "Entrega: "+o.dueDate : "Sense data límit"} · ${o.id.slice(0,8)}`;
-      const pill = document.createElement("span"); pill.className = "status-pill"; pill.textContent = o.status || "Sense estat";
-      left.append(title, meta, pill);
+      const statusWrap = document.createElement("div");
+      statusWrap.className = "order-status-control";
+      const statusLabel = document.createElement("label");
+      statusLabel.textContent = "Estat de la comanda";
+      statusLabel.className = "order-status-label";
+      const statusSelect = document.createElement("select");
+      statusSelect.className = "order-status-select";
+      statusSelect.setAttribute("aria-label", `Canviar estat de la comanda de ${o.client || "client sense nom"}`);
+      statuses.forEach(status => {
+        const option = document.createElement("option");
+        option.value = status;
+        option.textContent = status;
+        statusSelect.appendChild(option);
+      });
+      statusSelect.value = statuses.includes(o.status) ? o.status : statuses[0];
+      statusSelect.addEventListener("change", async () => {
+        const newStatus = statusSelect.value;
+        statusSelect.disabled = true;
+        try {
+          await updateDoc(doc(db, "orders", o.id), {status: newStatus, updatedAt: serverTimestamp()});
+        } catch (err) {
+          console.error("No s'ha pogut canviar l'estat de la comanda:", err);
+          statusSelect.value = statuses.includes(o.status) ? o.status : statuses[0];
+          alert(`No s'ha pogut canviar l'estat (${err.code || "error"}). Comprova la connexió i els permisos de Firebase.`);
+        } finally {
+          statusSelect.disabled = false;
+        }
+      });
+      statusWrap.append(statusLabel, statusSelect);
+      left.append(title, meta, statusWrap);
       const right = document.createElement("div"); right.className = "order-right";
       const price = document.createElement("div"); price.className = "order-price"; price.textContent = money(o.total);
       const actions = document.createElement("div"); actions.className = "order-actions";
