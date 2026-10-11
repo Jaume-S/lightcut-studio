@@ -100,6 +100,38 @@
         <div class="filters"><label for="statusFilter">Filtrar per estat</label><select id="statusFilter"><option value="">Tots els estats</option><option>Pendent de confirmar</option><option>Confirmada</option><option>En producció</option><option>Llista per entregar</option><option>Entregada</option><option>Cancel·lada</option></select></div>
         <div id="ordersList" class="orders-list"><p class="muted">Carregant comandes...</p></div>
       </section>
+
+      <section class="panel" id="clientsPanel">
+        <div class="section-heading"><div><p class="eyebrow">CRM</p><h2>Fitxes de clients</h2><p class="muted">Desa les dades de contacte i fiscals per reutilitzar-les en comandes i factures.</p></div></div>
+        <form id="clientForm"><input id="clientId" type="hidden"><div class="form-grid">
+          <div><label for="clName">Nom o raó social *</label><input id="clName" required maxlength="160"></div>
+          <div><label for="clTaxId">NIF / CIF</label><input id="clTaxId" maxlength="30"></div>
+          <div><label for="clEmail">Correu electrònic</label><input id="clEmail" type="email" maxlength="160"></div>
+          <div><label for="clPhone">Telèfon</label><input id="clPhone" maxlength="40"></div>
+          <div><label for="clAddress">Adreça fiscal</label><input id="clAddress" maxlength="220"></div>
+          <div><label for="clZip">Codi postal</label><input id="clZip" maxlength="12"></div>
+          <div><label for="clCity">Població</label><input id="clCity" maxlength="100"></div>
+          <div><label for="clCountry">País</label><input id="clCountry" value="Espanya" maxlength="80"></div>
+        </div><label for="clNotes">Notes internes</label><textarea id="clNotes" rows="2" maxlength="2000"></textarea>
+        <div class="form-actions"><button class="button primary" type="submit" id="saveClientBtn">Desar client</button><button class="button secondary hidden" type="button" id="cancelClientBtn">Cancel·lar</button><p id="clientMessage" class="muted" role="status"></p></div></form>
+        <div class="section-heading clients-list-heading"><h3>Clients desats</h3><input id="clientSearch" class="search" placeholder="Cercar client..."></div><div id="clientsList" class="catalog-list"><p class="muted">Carregant clients...</p></div>
+      </section>
+      <section class="panel" id="invoicesPanel">
+        <div class="section-heading"><div><p class="eyebrow">DOCUMENTS FISCALS</p><h2>Creador de factures</h2><p class="muted">Genera un esborrany des d'una comanda o crea una factura manual.</p></div></div>
+        <form id="invoiceForm"><div class="form-grid">
+          <div><label for="invoiceOrder">Crear des d'una comanda (opcional)</label><select id="invoiceOrder"><option value="">Factura manual</option></select></div>
+          <div><label for="invoiceClient">Client *</label><select id="invoiceClient" required><option value="">Selecciona un client...</option></select></div>
+          <div><label for="invoiceDate">Data d'emissió *</label><input id="invoiceDate" type="date" required></div>
+          <div><label for="invoiceVat">IVA (%)</label><select id="invoiceVat"><option value="21">21%</option><option value="10">10%</option><option value="0">0%</option></select></div>
+        </div><label for="invoiceDescription">Descripció / conceptes *</label><textarea id="invoiceDescription" rows="3" required maxlength="3000" placeholder="Descripció dels productes o serveis facturats"></textarea>
+        <div class="form-grid"><div><label for="invoiceBase">Base imposable (€) *</label><input id="invoiceBase" type="number" min="0" step="0.01" required value="0"></div><div><label for="invoiceDeposit">Bestreta ja pagada (€)</label><input id="invoiceDeposit" type="number" min="0" step="0.01" value="0"></div></div>
+        <div class="invoice-totals"><div><span>Base imposable</span><strong id="invoiceBasePreview">0,00 €</strong></div><div><span>IVA</span><strong id="invoiceVatPreview">0,00 €</strong></div><div><span>Total factura</span><strong id="invoiceTotalPreview">0,00 €</strong></div><div><span>Pendent de cobrar</span><strong id="invoicePendingPreview">0,00 €</strong></div></div>
+        <div class="form-actions"><button class="button primary" type="submit" id="saveInvoiceBtn">Desar esborrany</button><p id="invoiceMessage" class="muted" role="status"></p></div></form>
+        <p class="finance-footnote">Les factures es desen inicialment com a esborrany. Revisa les dades fiscals i la numeració abans d'emetre-les oficialment.</p><div class="section-heading clients-list-heading"><h3>Factures desades</h3></div><div id="invoicesList" class="catalog-list"><p class="muted">Carregant factures...</p></div>
+      </section>
+      <section class="panel" id="fiscalSettingsPanel"><div class="section-heading"><div><p class="eyebrow">CONFIGURACIÓ</p><h2>Dades fiscals de l'emissor</h2><p class="muted">Deixa els camps buits i completa'ls quan tinguis les dades definitives.</p></div></div>
+        <form id="fiscalForm"><div class="form-grid"><div><label for="fsName">Nom / raó social</label><input id="fsName" maxlength="160"></div><div><label for="fsTaxId">NIF / CIF</label><input id="fsTaxId" maxlength="30"></div><div><label for="fsAddress">Adreça fiscal</label><input id="fsAddress" maxlength="220"></div><div><label for="fsZip">Codi postal</label><input id="fsZip" maxlength="12"></div><div><label for="fsCity">Població</label><input id="fsCity" maxlength="100"></div><div><label for="fsCountry">País</label><input id="fsCountry" value="Espanya" maxlength="80"></div><div><label for="fsEmail">Correu</label><input id="fsEmail" type="email" maxlength="160"></div><div><label for="fsPhone">Telèfon</label><input id="fsPhone" maxlength="40"></div><div><label for="fsPrefix">Prefix de numeració de factures</label><input id="fsPrefix" value="F-" maxlength="12"></div></div><div class="form-actions"><button class="button primary" type="submit">Desar dades fiscals</button><p id="fiscalMessage" class="muted" role="status"></p></div></form>
+      </section>
     </section>
     <footer>LightCut Studio · Gestor intern · Les dades es desen a Firebase</footer>
   </main>
