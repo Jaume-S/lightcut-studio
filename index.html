@@ -25,6 +25,24 @@
         <article class="stat-card"><span>Confirmades / en curs</span><strong id="statActive">0</strong></article>
         <article class="stat-card"><span>Import total registrat</span><strong id="statTotal">0,00 €</strong></article>
       </div>
+      <section class="panel finance-panel" id="financePanel">
+        <div class="section-heading finance-heading">
+          <div><p class="eyebrow">LIGHTCUT STUDIO · RESUM</p><h2>Panell financer</h2><p class="muted">Una visió ràpida dels ingressos i la rendibilitat estimada de les teves comandes.</p></div>
+          <div class="finance-period"><label for="financePeriod">Període</label><select id="financePeriod"><option value="month">Aquest mes</option><option value="30">Últims 30 dies</option><option value="90">Últims 90 dies</option><option value="year">Aquest any</option><option value="all">Tot l'historial</option></select></div>
+        </div>
+        <div class="finance-kpis">
+          <article class="finance-kpi"><span>Vendes (sense IVA)</span><strong id="finRevenue">0,00 €</strong><small>Comandes no cancel·lades</small></article>
+          <article class="finance-kpi"><span>Costos estimats</span><strong id="finCosts">0,00 €</strong><small>Productes + mà d'obra + altres</small></article>
+          <article class="finance-kpi highlight"><span>Benefici estimat</span><strong id="finProfit">0,00 €</strong><small id="finProfitNote">Abans d'impostos i despeses generals</small></article>
+          <article class="finance-kpi"><span>Marge sobre vendes</span><strong id="finMargin">0,0%</strong><small>Benefici / vendes sense IVA</small></article>
+          <article class="finance-kpi"><span>Bestretes registrades</span><strong id="finDeposits">0,00 €</strong><small>No equival necessàriament a cobraments totals</small></article>
+          <article class="finance-kpi"><span>Pendent de cobrar</span><strong id="finPending">0,00 €</strong><small>Import total menys bestretes</small></article>
+        </div>
+        <div class="finance-lower">
+          <div class="finance-chart-card"><div class="finance-chart-heading"><h3>Vendes i benefici per mes</h3><span class="muted">Sense IVA · comandes creades en cada mes</span></div><div id="financeChart" class="finance-chart"><p class="muted">Encara no hi ha dades financeres.</p></div><div class="finance-legend"><span><i class="legend-sales"></i>Vendes</span><span><i class="legend-profit"></i>Benefici estimat</span></div></div>
+          <div class="finance-summary-card"><h3>Indicadors del període</h3><div class="finance-summary-row"><span>Comandes incloses</span><strong id="finOrders">0</strong></div><div class="finance-summary-row"><span>Comanda mitjana (sense IVA)</span><strong id="finAverage">0,00 €</strong></div><div class="finance-summary-row"><span>Comandes entregades</span><strong id="finDelivered">0</strong></div><div class="finance-summary-row"><span>Comandes cancel·lades</span><strong id="finCancelled">0</strong></div><p class="finance-footnote">Les xifres són estimacions calculades amb les dades desades a cada comanda. No són un registre comptable ni fiscal.</p></div>
+        </div>
+      </section>
       <section class="panel">
         <div class="section-heading"><div><p class="eyebrow">REGISTRE</p><h2 id="formTitle">Nova comanda</h2></div><button id="cancelEditBtn" type="button" class="button secondary hidden">Cancel·lar edició</button></div>
         <form id="orderForm">

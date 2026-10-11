@@ -391,6 +391,91 @@ function createQuotePdf(order, language = "ca") {
   popup.document.open(); popup.document.write(html); popup.document.close();
 }
 
+function getOrderDate(order) {
+  const value = order.createdAt || order.updatedAt;
+  if (value && typeof value.toDate === "function") return value.toDate();
+  if (value && typeof value.seconds === "number") return new Date(value.seconds * 1000);
+  if (value instanceof Date) return value;
+  return null;
+}
+function renderFinance() {
+  const now = new Date();
+  const period = $("financePeriod")?.value || "month";
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  if (period === "30" || period === "90") {
+    start.setTime(now.getTime());
+    start.setDate(start.getDate() - Number(period) + 1);
+    start.setHours(0,0,0,0);
+  } else if (period === "year") {
+    start.setFullYear(now.getFullYear(), 0, 1);
+  }
+  const inPeriod = orders.filter(o => {
+    if (period === "all") return true;
+    const date = getOrderDate(o);
+    return date && date >= start && date <= now;
+  });
+  const active = inPeriod.filter(o => o.status !== "Cancel·lada");
+  const num = (v) => Number.isFinite(Number(v)) ? Number(v) : 0;
+  const revenueOf = o => num(o.subtotal ?? (num(o.total) / (1 + num(o.vatRate ?? .21))));
+  const costsOf = o => num(o.estimatedCost ?? (num(o.productCost) + num(o.estimatedLaborCost) + num(o.estimatedOtherCosts)));
+  const profitOf = o => num(o.estimatedMargin ?? (revenueOf(o) - costsOf(o)));
+  const revenue = active.reduce((sum,o) => sum + revenueOf(o), 0);
+  const costs = active.reduce((sum,o) => sum + costsOf(o), 0);
+  const profit = active.reduce((sum,o) => sum + profitOf(o), 0);
+  const deposits = active.reduce((sum,o) => sum + num(o.deposit), 0);
+  const pending = active.reduce((sum,o) => sum + Math.max(0, num(o.total) - num(o.deposit)), 0);
+  const margin = revenue > 0 ? profit / revenue * 100 : 0;
+  $("finRevenue").textContent = money(revenue);
+  $("finCosts").textContent = money(costs);
+  $("finProfit").textContent = money(profit);
+  $("finProfit").style.color = profit < 0 ? "var(--danger)" : "var(--accent)";
+  $("finMargin").textContent = `${margin.toLocaleString("ca-ES", {minimumFractionDigits:1, maximumFractionDigits:1})}%`;
+  $("finDeposits").textContent = money(deposits);
+  $("finPending").textContent = money(pending);
+  $("finOrders").textContent = String(active.length);
+  $("finAverage").textContent = money(active.length ? revenue / active.length : 0);
+  $("finDelivered").textContent = String(active.filter(o => o.status === "Entregada").length);
+  $("finCancelled").textContent = String(inPeriod.filter(o => o.status === "Cancel·lada").length);
+
+  const chart = $("financeChart");
+  chart.innerHTML = "";
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({date, key: `${date.getFullYear()}-${date.getMonth()}`, revenue: 0, profit: 0});
+  }
+  const chartOrders = active.filter(o => {
+    const date = getOrderDate(o);
+    if (!date) return false;
+    return months.some(m => m.key === `${date.getFullYear()}-${date.getMonth()}`);
+  });
+  chartOrders.forEach(o => {
+    const date = getOrderDate(o);
+    const month = months.find(m => m.key === `${date.getFullYear()}-${date.getMonth()}`);
+    if (month) { month.revenue += revenueOf(o); month.profit += profitOf(o); }
+  });
+  const maxValue = Math.max(1, ...months.map(m => Math.max(m.revenue, m.profit)));
+  if (!chartOrders.length) {
+    chart.innerHTML = '<p class="finance-empty">No hi ha comandes amb data en els últims sis mesos.</p>';
+  } else {
+    months.forEach(m => {
+      const column = document.createElement("div"); column.className = "finance-month";
+      const bars = document.createElement("div"); bars.className = "finance-bars";
+      const sales = document.createElement("div"); sales.className = "finance-bar sales";
+      sales.style.height = `${Math.max(m.revenue > 0 ? 3 : 0, m.revenue / maxValue * 100)}%`;
+      sales.title = `Vendes ${m.date.toLocaleDateString("ca-ES", {month:"long",year:"numeric"})}: ${money(m.revenue)}`;
+      const prof = document.createElement("div"); prof.className = "finance-bar profit";
+      prof.style.height = `${Math.max(m.profit > 0 ? 3 : 0, Math.max(0,m.profit) / maxValue * 100)}%`;
+      prof.title = `Benefici estimat: ${money(m.profit)}`;
+      bars.append(sales, prof);
+      const label = document.createElement("span"); label.className = "finance-month-label";
+      label.textContent = m.date.toLocaleDateString("ca-ES", {month:"short"}).replace(".","");
+      column.append(bars, label); chart.appendChild(column);
+    });
+  }
+}
+$("financePeriod")?.addEventListener("change", renderFinance);
+
 function renderOrders() {
   const search = $("search").value.trim().toLocaleLowerCase("ca");
   const filter = $("statusFilter").value;
@@ -448,6 +533,7 @@ function renderOrders() {
   $("statCount").textContent = String(orders.length);
   $("statActive").textContent = String(orders.filter(o => ["Confirmada","En producció","Llista per entregar"].includes(o.status)).length);
   $("statTotal").textContent = money(orders.filter(o => o.status !== "Cancel·lada").reduce((s,o)=>s+(Number(o.total)||0),0));
+  renderFinance();
 }
 $("search").addEventListener("input", renderOrders);
 $("statusFilter").addEventListener("change", renderOrders);
