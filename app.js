@@ -236,6 +236,7 @@ function updateTotals() {
 
 function resetForm() {
   $("orderForm").reset();
+  $("orderClientId").value = "";
   $("orderId").value = "";
   $("formTitle").textContent = "Nova comanda";
   $("saveBtn").textContent = "Desar comanda";
@@ -250,6 +251,7 @@ function formData() {
   const t = totals(products);
   return {
     client: $("client").value.trim(),
+    clientId: $("orderClientId").value || null,
     contact: $("contact").value.trim(),
     eventType: $("eventType").value,
     dueDate: $("dueDate").value || "",
@@ -276,6 +278,20 @@ function formData() {
     updatedAt: serverTimestamp()
   };
 }
+function matchSavedClientByName(name) { return clients.find(c => (c.name || "").trim().toLocaleLowerCase("ca") === (name || "").trim().toLocaleLowerCase("ca")); }
+function syncOrderClientSelection() {
+  const name = $("client").value.trim();
+  const client = matchSavedClientByName(name);
+  $("orderClientId").value = client?.id || "";
+  if (client) {
+    const contact = [client.email, client.phone].filter(Boolean).join(" · ");
+    $("contact").value = contact;
+  }
+}
+$("client").addEventListener("input", () => { $("orderClientId").value = ""; });
+$("client").addEventListener("change", syncOrderClientSelection);
+$("client").addEventListener("blur", syncOrderClientSelection);
+
 $("loginForm").addEventListener("submit", async e => {
   e.preventDefault(); showError("");
   try {
@@ -320,6 +336,7 @@ function editOrder(order) {
   $("saveBtn").textContent = "Desar canvis";
   $("cancelEditBtn").classList.remove("hidden");
   $("client").value = order.client || "";
+  $("orderClientId").value = order.clientId || "";
   $("contact").value = order.contact || "";
   $("eventType").value = order.eventType || "Particular";
   $("dueDate").value = order.dueDate || "";
@@ -526,8 +543,9 @@ function renderOrders() {
       const price = document.createElement("div"); price.className = "order-price"; price.textContent = money(o.total);
       const actions = document.createElement("div"); actions.className = "order-actions";
       const quote = document.createElement("button"); quote.className = "small-btn"; quote.textContent = "Pressupost PDF"; quote.addEventListener("click", () => { const spanish = confirm("Vols generar el pressupost en castellà?\n\nAccepta: castellà · Cancel·la: català"); createQuotePdf(o, spanish ? "es" : "ca"); });
+      const invoice = document.createElement("button"); invoice.className = "small-btn"; invoice.textContent = "Crear factura"; invoice.addEventListener("click", () => { fillClientSelects(); $("invoiceOrder").value = o.id; $("invoiceOrder").dispatchEvent(new Event("change")); $("invoicesPanel").scrollIntoView({behavior:"smooth",block:"start"}); });
       const edit = document.createElement("button"); edit.className = "small-btn"; edit.textContent = "Editar"; edit.addEventListener("click", () => editOrder(o));
-      actions.append(quote, edit); right.append(price, actions); card.append(left,right); $("ordersList").append(card);
+      actions.append(quote, invoice, edit); right.append(price, actions); card.append(left,right); $("ordersList").append(card);
     });
   }
   $("statCount").textContent = String(orders.length);
@@ -552,7 +570,7 @@ onAuthStateChanged(auth, user => {
   renderOrders();
   renderCatalog();
   if (user) {
-    unsubClients = onSnapshot(query(collection(db,'clients'), orderBy('name')), snap=>{clients=snap.docs.map(d=>({id:d.id,...d.data()}));renderClients();},err=>{$('clientsList').innerHTML=`<div class="empty">No es poden carregar clients (${err.code||'error'}).</div>`;});
+    unsubClients = onSnapshot(query(collection(db,'clients'), orderBy('name')), snap=>{clients=snap.docs.map(d=>({id:d.id,...d.data()}));renderClients();syncOrderClientSelection();},err=>{$('clientsList').innerHTML=`<div class="empty">No es poden carregar clients (${err.code||'error'}).</div>`;});
     unsubInvoices = onSnapshot(query(collection(db,'invoices'), orderBy('sequence')), snap=>{invoices=snap.docs.map(d=>({id:d.id,...d.data()}));renderInvoices();},err=>{$('invoicesList').innerHTML=`<div class="empty">No es poden carregar factures (${err.code||'error'}).</div>`;});
     unsubSettings = onSnapshot(doc(db,'settings','fiscal'), snap=>{fiscalSettings=snap.exists()?snap.data():{};populateFiscalForm();},err=>console.warn('Fiscal settings',err));
     unsubscribeCatalog = onSnapshot(query(collection(db, "products"), orderBy("name")), snapshot => {
@@ -580,6 +598,8 @@ let clients = [], invoices = [], fiscalSettings = {};
 let unsubClients = null, unsubInvoices = null, unsubSettings = null;
 function safeText(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fillClientSelects() {
+  const clientInput = $('savedClients');
+  if (clientInput) clientInput.innerHTML = clients.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(c=>`<option value="${safeText(c.name)}"></option>`).join('');
   const current = $('invoiceClient').value;
   $('invoiceClient').innerHTML = '<option value="">Selecciona un client...</option>' + clients.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(c=>`<option value="${c.id}">${safeText(c.name)}</option>`).join('');
   if (clients.some(c=>c.id===current)) $('invoiceClient').value=current;
@@ -590,9 +610,10 @@ function fillClientSelects() {
 function renderClients() {
   const term=($('clientSearch')?.value||'').toLowerCase();
   const filtered=clients.filter(c=>[c.name,c.taxId,c.email,c.phone].join(' ').toLowerCase().includes(term));
-  $('clientsList').innerHTML=filtered.length?filtered.map(c=>`<article class="catalog-item"><div><div class="catalog-name">${safeText(c.name)}</div><div class="catalog-desc">${safeText(c.taxId||'Sense NIF')} · ${safeText(c.email||'Sense correu')} · ${safeText(c.phone||'Sense telèfon')}<br>${orders.filter(o=>o.clientId===c.id||o.client===c.name).length} comandes · ${invoices.filter(i=>i.clientId===c.id).length} factures</div></div><div class="catalog-actions"><button class="small-btn" data-edit-client="${c.id}">Editar</button><button class="small-btn" data-invoice-client="${c.id}">Nova factura</button></div></article>`).join(''):'<div class="empty">Encara no hi ha clients desats.</div>';
+  $('clientsList').innerHTML=filtered.length?filtered.map(c=>`<article class="catalog-item"><div><div class="catalog-name">${safeText(c.name)}</div><div class="catalog-desc">${safeText(c.taxId||'Sense NIF')} · ${safeText(c.email||'Sense correu')} · ${safeText(c.phone||'Sense telèfon')}<br>${orders.filter(o=>o.clientId===c.id||o.client===c.name).length} comandes · ${invoices.filter(i=>i.clientId===c.id).length} factures</div></div><div class="catalog-actions"><button class="small-btn" data-edit-client="${c.id}">Editar</button><button class="small-btn" data-client-orders="${c.id}">Historial</button><button class="small-btn" data-invoice-client="${c.id}">Nova factura</button></div></article>`).join(''):'<div class="empty">Encara no hi ha clients desats.</div>';
   $('clientsList').querySelectorAll('[data-edit-client]').forEach(b=>b.onclick=()=>editClient(clients.find(c=>c.id===b.dataset.editClient)));
   $('clientsList').querySelectorAll('[data-invoice-client]').forEach(b=>{b.onclick=()=>{$('invoiceClient').value=b.dataset.invoiceClient;$('invoicesPanel').scrollIntoView({behavior:'smooth'});};});
+  $('clientsList').querySelectorAll('[data-client-orders]').forEach(b=>{b.onclick=()=>{const c=clients.find(x=>x.id===b.dataset.clientOrders);$('search').value=c?.name||'';$('ordersPanel').scrollIntoView({behavior:'smooth'});renderOrders();};});
   fillClientSelects();
 }
 function resetClientForm(){ $('clientForm').reset(); $('clientId').value=''; $('clCountry').value='Espanya'; $('saveClientBtn').textContent='Desar client'; $('cancelClientBtn').classList.add('hidden'); }
@@ -609,5 +630,13 @@ $('invoiceForm').addEventListener('submit',async e=>{e.preventDefault();if(!auth
 $('fiscalForm').addEventListener('submit',async e=>{e.preventDefault();try{fiscalSettings={name:$('fsName').value.trim(),taxId:$('fsTaxId').value.trim(),address:$('fsAddress').value.trim(),zip:$('fsZip').value.trim(),city:$('fsCity').value.trim(),country:$('fsCountry').value.trim(),email:$('fsEmail').value.trim(),phone:$('fsPhone').value.trim(),prefix:$('fsPrefix').value.trim()||'F-',updatedAt:serverTimestamp()};await updateDoc(doc(db,'settings','fiscal'),fiscalSettings).catch(async err=>{if(err.code==='not-found'||err.code==='firestore/not-found')await setDoc(doc(db,'settings','fiscal'),fiscalSettings);else throw err;});$('fiscalMessage').textContent='Dades fiscals desades.';}catch(err){$('fiscalMessage').textContent=`No s'han pogut desar les dades (${err.code||err.message}).`;}});
 function populateFiscalForm(){const m={fsName:'name',fsTaxId:'taxId',fsAddress:'address',fsZip:'zip',fsCity:'city',fsCountry:'country',fsEmail:'email',fsPhone:'phone',fsPrefix:'prefix'};for(const [id,key] of Object.entries(m))$(id).value=fiscalSettings[key]??(key==='country'?'Espanya':key==='prefix'?'F-':'');}
 
+
+const navToggle=$('navToggle'), sideNav=$('sideNav'), navBackdrop=$('navBackdrop');
+function closeSideNav(){sideNav.classList.remove('open');navBackdrop.classList.add('hidden');navToggle.setAttribute('aria-expanded','false');}
+function openSideNav(){sideNav.classList.add('open');navBackdrop.classList.remove('hidden');navToggle.setAttribute('aria-expanded','true');}
+navToggle?.addEventListener('click',()=>sideNav.classList.contains('open')?closeSideNav():openSideNav());
+$('navClose')?.addEventListener('click',closeSideNav);navBackdrop?.addEventListener('click',closeSideNav);
+sideNav?.querySelectorAll('a').forEach(a=>a.addEventListener('click',closeSideNav));
+window.addEventListener('keydown',e=>{if(e.key==='Escape')closeSideNav();});
 
 $('invoiceDate').value=new Date().toISOString().slice(0,10); updateInvoicePreview();

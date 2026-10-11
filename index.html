@@ -7,9 +7,10 @@
 </head>
 <body>
   <main class="shell">
+    <div id="navBackdrop" class="nav-backdrop hidden"></div><aside id="sideNav" class="side-nav" aria-label="Navegació principal"><div class="side-nav-head"><strong>LIGHTCUT STUDIO</strong><button id="navClose" class="nav-close" type="button" aria-label="Tancar menú">×</button></div><nav><a href="#financePanel">Panell financer</a><a href="#orderPanel">Nova comanda</a><a href="#catalogPanel">Catàleg</a><a href="#ordersPanel">Comandes</a><a href="#clientsPanel">Clients</a><a href="#invoicesPanel">Factures</a><a href="#fiscalSettingsPanel">Configuració fiscal</a></nav></aside>
     <header class="topbar">
       <div><p class="eyebrow">LIGHTCUT STUDIO</p><h1>Gestió de comandes</h1></div>
-      <button id="logoutBtn" class="button secondary hidden">Tancar sessió</button>
+      <div class="topbar-actions"><button id="logoutBtn" class="button secondary hidden">Tancar sessió</button><button id="navToggle" class="nav-toggle" type="button" aria-label="Obrir menú de navegació" aria-expanded="false" title="Navegació">☰</button></div>
     </header>
     <section id="loginPanel" class="panel login-panel">
       <h2>Inicia sessió</h2><p class="muted">Accés privat al gestor de comandes.</p>
@@ -43,12 +44,12 @@
           <div class="finance-summary-card"><h3>Indicadors del període</h3><div class="finance-summary-row"><span>Comandes incloses</span><strong id="finOrders">0</strong></div><div class="finance-summary-row"><span>Comanda mitjana (sense IVA)</span><strong id="finAverage">0,00 €</strong></div><div class="finance-summary-row"><span>Comandes entregades</span><strong id="finDelivered">0</strong></div><div class="finance-summary-row"><span>Comandes cancel·lades</span><strong id="finCancelled">0</strong></div><p class="finance-footnote">Les xifres són estimacions calculades amb les dades desades a cada comanda. No són un registre comptable ni fiscal.</p></div>
         </div>
       </section>
-      <section class="panel">
+      <section class="panel" id="orderPanel">
         <div class="section-heading"><div><p class="eyebrow">REGISTRE</p><h2 id="formTitle">Nova comanda</h2></div><button id="cancelEditBtn" type="button" class="button secondary hidden">Cancel·lar edició</button></div>
         <form id="orderForm">
           <input id="orderId" type="hidden">
           <div class="form-grid">
-            <div><label for="client">Client *</label><input id="client" required maxlength="120" placeholder="Nom del client o empresa"></div>
+            <div><label for="client">Client *</label><input id="client" list="savedClients" required maxlength="160" placeholder="Tria un client guardat o escriu-ne un de nou" autocomplete="off"><datalist id="savedClients"></datalist><input id="orderClientId" type="hidden"><p class="field-hint">Si selecciones un client guardat, la comanda quedarà vinculada a la seva fitxa.</p></div>
             <div><label for="contact">Contacte</label><input id="contact" maxlength="160" placeholder="Correu o telèfon"></div>
             <div><label for="eventType">Tipus d'encàrrec</label><select id="eventType"><option>Casament</option><option>Esdeveniment</option><option>Empresa</option><option>Particular</option></select></div>
             <div><label for="dueDate">Data límit d'entrega</label><input id="dueDate" type="date"></div>
@@ -95,7 +96,7 @@
         <div id="catalogList" class="catalog-list"><p class="muted">Carregant catàleg...</p></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="ordersPanel">
         <div class="section-heading"><div><p class="eyebrow">HISTORIAL</p><h2>Comandes desades</h2></div><input id="search" class="search" placeholder="Cercar client o número..."></div>
         <div class="filters"><label for="statusFilter">Filtrar per estat</label><select id="statusFilter"><option value="">Tots els estats</option><option>Pendent de confirmar</option><option>Confirmada</option><option>En producció</option><option>Llista per entregar</option><option>Entregada</option><option>Cancel·lada</option></select></div>
         <div id="ordersList" class="orders-list"><p class="muted">Carregant comandes...</p></div>
