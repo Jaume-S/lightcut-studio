@@ -345,30 +345,49 @@ function formatDate(value) {
   const parts = String(value).split("-");
   return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : escapeHtml(value);
 }
-function createQuotePdf(order) {
+function createQuotePdf(order, language = "ca") {
+  const es = language === "es";
   const products = Array.isArray(order.products) ? order.products : [];
   const subtotal = Number(order.subtotal ?? products.reduce((s,p)=>s+(Number(p.quantity)||0)*(Number(p.unitPrice)||0),0) + (Number(order.extraCharges)||0));
   const vatRate = Number(order.vatRate ?? 0.21);
   const vatAmount = Number(order.vatAmount ?? subtotal*vatRate);
   const total = Number(order.total ?? subtotal+vatAmount);
-  const moneyPdf = value => Number(value || 0).toLocaleString("ca-ES", {style:"currency",currency:"EUR"});
-  const rows = products.map(p => `<tr><td>${escapeHtml(p.name || "Producte personalitzat")}${p.notes ? `<div class="detail">${escapeHtml(p.notes)}</div>` : ""}</td><td class="num">${Number(p.quantity)||0}</td><td class="num">${moneyPdf(p.unitPrice)}</td><td class="num">${moneyPdf((Number(p.quantity)||0)*(Number(p.unitPrice)||0))}</td></tr>`).join("");
+  const locale = es ? "es-ES" : "ca-ES";
+  const t = es ? {
+    quote:"PRESUPUESTO", date:"Fecha", prepared:"Preparado para", client:"Cliente", event:"Encargo personalizado",
+    details:"Detalles del encargo", due:"Fecha límite de entrega", reference:"Referencia", description:"Descripción y precios",
+    product:"Producto / servicio", quantity:"Cant.", unit:"Precio unitario", amount:"Importe", custom:"Producto o servicio personalizado",
+    extras:"Otros gastos repercutidos", subtotal:"Subtotal", vat:"IVA", total:"TOTAL", notes:"OBSERVACIONES Y CONDICIONES",
+    footer:"LightCut Studio · Presupuesto orientativo según los detalles indicados", print:"Para guardar el documento en PDF, selecciona «Guardar como PDF» en la ventana de impresión.",
+    popup:"El navegador ha bloqueado la ventana del presupuesto. Permite las ventanas emergentes para este sitio y vuelve a intentarlo.",
+    title:"Presupuesto", productDefault:"Producto personalizado"
+  } : {
+    quote:"PRESSUPOST", date:"Data", prepared:"Preparat per a", client:"Client", event:"Encàrrec personalitzat",
+    details:"Detalls de l'encàrrec", due:"Data límit d'entrega", reference:"Referència", description:"Descripció i preus",
+    product:"Producte / servei", quantity:"Quant.", unit:"Preu unitari", amount:"Import", custom:"Producte o servei personalitzat",
+    extras:"Altres despeses repercutides", subtotal:"Subtotal", vat:"IVA", total:"TOTAL", notes:"OBSERVACIONS I CONDICIONS",
+    footer:"LightCut Studio · Pressupost orientatiu segons els detalls indicats", print:"Per desar el document en PDF, selecciona «Desa com a PDF» a la finestra d'impressió.",
+    popup:"El navegador ha bloquejat la finestra del pressupost. Permet les finestres emergents per a aquest lloc i torna-ho a provar.",
+    title:"Pressupost", productDefault:"Producte personalitzat"
+  };
+  const moneyPdf = value => Number(value || 0).toLocaleString(locale, {style:"currency",currency:"EUR"});
+  const rows = products.map(p => `<tr><td>${escapeHtml(p.name || t.productDefault)}${p.notes ? `<div class="detail">${escapeHtml(p.notes)}</div>` : ""}</td><td class="num">${Number(p.quantity)||0}</td><td class="num">${moneyPdf(p.unitPrice)}</td><td class="num">${moneyPdf((Number(p.quantity)||0)*(Number(p.unitPrice)||0))}</td></tr>`).join("");
   const extra = Number(order.extraCharges ?? order.shipping ?? 0);
   const notes = String(order.notes || "").trim();
-  const issueDate = new Date().toLocaleDateString("ca-ES");
+  const issueDate = new Date().toLocaleDateString(locale);
   const docNo = `LCS-${String(order.id || "").slice(0,8).toUpperCase()}`;
-  const html = `<!doctype html><html lang="ca"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pressupost ${docNo} — LightCut Studio</title><style>
+  const html = `<!doctype html><html lang="${es ? "es" : "ca"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${t.title} ${docNo} — LightCut Studio</title><style>
     @page{size:A4;margin:18mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#242424;margin:0;font-size:12px;line-height:1.5}header{display:flex;justify-content:space-between;gap:24px;border-bottom:3px solid #b7a17a;padding-bottom:20px;margin-bottom:28px}.brand{font-size:23px;letter-spacing:2px;font-weight:700}.subbrand{color:#777;font-size:10px;letter-spacing:2px;margin-top:3px}.doctype{text-align:right}.doctype h1{font-size:23px;letter-spacing:2px;margin:0 0 5px}.muted{color:#777}.details{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:26px}.label{font-size:9px;letter-spacing:1.4px;color:#8a795d;text-transform:uppercase;font-weight:700;margin-bottom:5px}.client{font-size:16px;font-weight:700}.event{margin-top:5px;color:#666}table{width:100%;border-collapse:collapse;margin:18px 0 20px}thead{background:#f3f0e9}th{text-align:left;font-size:10px;letter-spacing:.5px;color:#5f513c;padding:10px 8px}td{padding:11px 8px;border-bottom:1px solid #e8e5df;vertical-align:top}td.num,th.num{text-align:right;white-space:nowrap}.detail{color:#777;font-size:10px;margin-top:3px}.summary{width:52%;margin-left:auto}.summary div{display:flex;justify-content:space-between;padding:6px 0}.summary .total{font-size:16px;font-weight:700;border-top:2px solid #b7a17a;margin-top:5px;padding-top:12px}.notes{margin-top:28px;padding:14px;background:#f7f6f2;white-space:pre-wrap}.notes strong{display:block;font-size:10px;letter-spacing:1px;margin-bottom:5px}.footer{border-top:1px solid #ddd;margin-top:38px;padding-top:12px;color:#888;font-size:9px;display:flex;justify-content:space-between}.print-hint{margin:0 0 16px;padding:10px;background:#f7f6f2;color:#666;font-size:11px}@media print{.print-hint{display:none}}@media screen{body{max-width:800px;margin:24px auto;padding:24px;box-shadow:0 2px 25px #0001}.print-hint{display:block}}
-    </style></head><body><div class="print-hint">Per desar el document en PDF, selecciona <b>Desa com a PDF</b> a la finestra d'impressió.</div>
-    <header><div><div class="brand">LIGHTCUT STUDIO</div><div class="subbrand">DISSENY · TALL I GRAVAT LÀSER</div></div><div class="doctype"><h1>PRESSUPOST</h1><div><b>${docNo}</b></div><div class="muted">Data: ${issueDate}</div></div></header>
-    <section class="details"><div><div class="label">Preparat per a</div><div class="client">${escapeHtml(order.client || "Client")}</div>${order.contact ? `<div>${escapeHtml(order.contact)}</div>` : ""}<div class="event">${escapeHtml(order.eventType || "Encàrrec personalitzat")}</div></div><div><div class="label">Detalls de l'encàrrec</div><div>Data límit d'entrega: <b>${formatDate(order.dueDate)}</b></div><div>Referència: ${escapeHtml(String(order.id || "").slice(0,8).toUpperCase())}</div></div></section>
-    <div class="label">Descripció i preus</div><table><thead><tr><th>Producte / servei</th><th class="num">Quant.</th><th class="num">Preu unitari</th><th class="num">Import</th></tr></thead><tbody>${rows || '<tr><td colspan="4">Producte o servei personalitzat</td></tr>'}${extra ? `<tr><td>Altres despeses repercutides</td><td class="num">1</td><td class="num">${moneyPdf(extra)}</td><td class="num">${moneyPdf(extra)}</td></tr>` : ""}</tbody></table>
-    <section class="summary"><div><span>Subtotal</span><span>${moneyPdf(subtotal)}</span></div><div><span>IVA (${(vatRate*100).toLocaleString("ca-ES")}%)</span><span>${moneyPdf(vatAmount)}</span></div><div class="total"><span>TOTAL</span><span>${moneyPdf(total)}</span></div></section>
-    ${notes ? `<section class="notes"><strong>OBSERVACIONS I CONDICIONS</strong>${escapeHtml(notes)}</section>` : ""}
-    <footer class="footer"><span>LightCut Studio · Pressupost orientatiu segons els detalls indicats</span><span>${docNo}</span></footer>
+    </style></head><body><div class="print-hint">${t.print}</div>
+    <header><div><div class="brand">LIGHTCUT STUDIO</div><div class="subbrand">DISEÑO · CORTE Y GRABADO LÁSER</div></div><div class="doctype"><h1>${t.quote}</h1><div><b>${docNo}</b></div><div class="muted">${t.date}: ${issueDate}</div></div></header>
+    <section class="details"><div><div class="label">${t.prepared}</div><div class="client">${escapeHtml(order.client || t.client)}</div>${order.contact ? `<div>${escapeHtml(order.contact)}</div>` : ""}<div class="event">${escapeHtml(order.eventType || t.event)}</div></div><div><div class="label">${t.details}</div><div>${t.due}: <b>${formatDate(order.dueDate)}</b></div><div>${t.reference}: ${escapeHtml(String(order.id || "").slice(0,8).toUpperCase())}</div></div></section>
+    <div class="label">${t.description}</div><table><thead><tr><th>${t.product}</th><th class="num">${t.quantity}</th><th class="num">${t.unit}</th><th class="num">${t.amount}</th></tr></thead><tbody>${rows || `<tr><td colspan="4">${t.custom}</td></tr>`}${extra ? `<tr><td>${t.extras}</td><td class="num">1</td><td class="num">${moneyPdf(extra)}</td><td class="num">${moneyPdf(extra)}</td></tr>` : ""}</tbody></table>
+    <section class="summary"><div><span>${t.subtotal}</span><span>${moneyPdf(subtotal)}</span></div><div><span>${t.vat} (${(vatRate*100).toLocaleString(locale)}%)</span><span>${moneyPdf(vatAmount)}</span></div><div class="total"><span>${t.total}</span><span>${moneyPdf(total)}</span></div></section>
+    ${notes ? `<section class="notes"><strong>${t.notes}</strong>${escapeHtml(notes)}</section>` : ""}
+    <footer class="footer"><span>${t.footer}</span><span>${docNo}</span></footer>
     <script>window.addEventListener('load',()=>setTimeout(()=>window.print(),350));<\/script></body></html>`;
   const popup = window.open("", "_blank");
-  if (!popup) { alert("El navegador ha bloquejat la finestra del pressupost. Permet les finestres emergents per a aquest lloc i torna-ho a provar."); return; }
+  if (!popup) { alert(t.popup); return; }
   popup.document.open(); popup.document.write(html); popup.document.close();
 }
 
@@ -421,7 +440,7 @@ function renderOrders() {
       const right = document.createElement("div"); right.className = "order-right";
       const price = document.createElement("div"); price.className = "order-price"; price.textContent = money(o.total);
       const actions = document.createElement("div"); actions.className = "order-actions";
-      const quote = document.createElement("button"); quote.className = "small-btn"; quote.textContent = "Pressupost PDF"; quote.addEventListener("click", () => createQuotePdf(o));
+      const quote = document.createElement("button"); quote.className = "small-btn"; quote.textContent = "Pressupost PDF"; quote.addEventListener("click", () => { const spanish = confirm("Vols generar el pressupost en castellà?\n\nAccepta: castellà · Cancel·la: català"); createQuotePdf(o, spanish ? "es" : "ca"); });
       const edit = document.createElement("button"); edit.className = "small-btn"; edit.textContent = "Editar"; edit.addEventListener("click", () => editOrder(o));
       actions.append(quote, edit); right.append(price, actions); card.append(left,right); $("ordersList").append(card);
     });
