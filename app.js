@@ -3,7 +3,7 @@ import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, updateDoc, doc, onSnapshot,
+  getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot,
   query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
@@ -25,6 +25,8 @@ const statuses = ["Pendent de confirmar","Confirmada","En producció","Llista pe
 let orders = [];
 let unsubscribeOrders = null;
 let productCounter = 0;
+let catalog = [];
+let unsubscribeCatalog = null;
 
 function showError(message) { $("loginError").textContent = message; }
 function addProductRow(product = {}) {
@@ -34,14 +36,26 @@ function addProductRow(product = {}) {
   row.dataset.rowId = String(id);
   row.innerHTML = `
     <div class="product-name"><label>Producte</label><select class="p-name">
-      <option value="">Tria producte...</option><option>Gots</option><option>Marca taules</option><option>Marca llocs</option><option>Clauers</option><option>Cake toppers</option><option>Altres</option>
+      <option value="">Tria producte...</option>
     </select></div>
     <div><label>Quantitat</label><input class="p-qty" type="number" min="1" step="1" value="1" required></div>
     <div><label>Preu unitari (€)</label><input class="p-price" type="number" min="0" step="0.01" value="0" required></div>
     <div><label>Cost unitari (€)</label><input class="p-cost" type="number" min="0" step="0.01" value="0" required></div>
     <div><button type="button" class="remove-product" aria-label="Eliminar producte">×</button></div>
     <div class="product-notes"><label>Personalització / detalls</label><input class="p-notes" maxlength="500" placeholder="Ex. noms gravats, fusta de roure..."></div>`;
-  row.querySelector(".p-name").value = product.name || "";
+  const nameSelect = row.querySelector(".p-name");
+  populateProductSelect(nameSelect, product.name || "");
+  nameSelect.addEventListener("change", () => {
+    const item = catalog.find(p => p.name === nameSelect.value);
+    if (item) {
+      row.querySelector(".p-price").value = Number(item.price || 0);
+      row.querySelector(".p-cost").value = Number(item.cost || 0);
+      if (!row.querySelector(".p-notes").value.trim()) {
+        row.querySelector(".p-notes").value = item.description || "";
+      }
+    }
+    updateTotals();
+  });
   row.querySelector(".p-qty").value = product.quantity ?? 1;
   row.querySelector(".p-price").value = product.unitPrice ?? 0;
   row.querySelector(".p-cost").value = product.unitCost ?? 0;
@@ -55,6 +69,129 @@ function addProductRow(product = {}) {
   $("products").appendChild(row);
   updateTotals();
 }
+
+function populateProductSelect(select, selectedName = "") {
+  const previous = selectedName || select.value || "";
+  select.innerHTML = "";
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Tria producte...";
+  select.appendChild(placeholder);
+  catalog.forEach(item => {
+    const option = document.createElement("option");
+    option.value = item.name;
+    option.textContent = item.name;
+    select.appendChild(option);
+  });
+  if (previous && !catalog.some(item => item.name === previous)) {
+    const option = document.createElement("option");
+    option.value = previous;
+    option.textContent = `${previous} (fora del catàleg)`;
+    select.appendChild(option);
+  }
+  select.value = previous;
+}
+function refreshProductSelects() {
+  document.querySelectorAll(".p-name").forEach(select => {
+    populateProductSelect(select, select.value);
+  });
+}
+function resetCatalogForm() {
+  $("catalogForm").reset();
+  $("catalogId").value = "";
+  $("catalogPrice").value = "0";
+  $("catalogCost").value = "0";
+  $("saveCatalogBtn").textContent = "Afegir al catàleg";
+  $("cancelCatalogBtn").classList.add("hidden");
+  $("catalogMessage").textContent = "";
+}
+function renderCatalog() {
+  const container = $("catalogList");
+  if (!container) return;
+  container.innerHTML = "";
+  if (!catalog.length) {
+    container.innerHTML = '<div class="empty">Encara no hi ha productes al catàleg. Afegeix-ne el primer.</div>';
+  } else {
+    catalog.forEach(item => {
+      const card = document.createElement("article");
+      card.className = "catalog-item";
+      const info = document.createElement("div");
+      const name = document.createElement("div");
+      name.className = "catalog-name";
+      name.textContent = item.name;
+      const desc = document.createElement("div");
+      desc.className = "catalog-desc";
+      desc.textContent = item.description || "Sense descripció";
+      const prices = document.createElement("div");
+      prices.className = "catalog-prices";
+      const price = document.createElement("strong");
+      price.textContent = `Venda: ${money(item.price)}`;
+      const cost = document.createElement("span");
+      cost.textContent = `Cost: ${money(item.cost)}`;
+      prices.append(price, cost);
+      const actions = document.createElement("div");
+      actions.className = "catalog-actions";
+      const edit = document.createElement("button");
+      edit.className = "small-btn";
+      edit.textContent = "Editar";
+      edit.addEventListener("click", () => {
+        $("catalogId").value = item.id;
+        $("catalogName").value = item.name;
+        $("catalogPrice").value = item.price ?? 0;
+        $("catalogCost").value = item.cost ?? 0;
+        $("catalogDescription").value = item.description || "";
+        $("saveCatalogBtn").textContent = "Desar canvis";
+        $("cancelCatalogBtn").classList.remove("hidden");
+        $("catalogForm").scrollIntoView({behavior:"smooth", block:"center"});
+      });
+      const remove = document.createElement("button");
+      remove.className = "small-btn";
+      remove.textContent = "Eliminar";
+      remove.addEventListener("click", async () => {
+        if (!confirm(`Vols eliminar "${item.name}" del catàleg? Les comandes existents no canviaran.`)) return;
+        try {
+          await deleteDoc(doc(db, "products", item.id));
+        } catch (err) {
+          $("catalogMessage").textContent = `No s'ha pogut eliminar (${err.code || "error"}).`;
+        }
+      });
+      actions.append(edit, remove);
+      info.append(name, desc, actions);
+      card.append(info, prices);
+      container.appendChild(card);
+    });
+  }
+  refreshProductSelects();
+}
+$("catalogForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!auth.currentUser) return;
+  const name = $("catalogName").value.trim();
+  const data = {
+    name,
+    price: Math.max(0, Number($("catalogPrice").value) || 0),
+    cost: Math.max(0, Number($("catalogCost").value) || 0),
+    description: $("catalogDescription").value.trim(),
+    updatedAt: serverTimestamp()
+  };
+  if (!name) return;
+  $("saveCatalogBtn").disabled = true;
+  $("catalogMessage").textContent = "Desant...";
+  try {
+    const id = $("catalogId").value;
+    if (id) await updateDoc(doc(db, "products", id), data);
+    else await addDoc(collection(db, "products"), {...data, createdAt: serverTimestamp()});
+    resetCatalogForm();
+    $("catalogMessage").textContent = "Producte desat correctament.";
+  } catch (err) {
+    console.error(err);
+    $("catalogMessage").textContent = `No s'ha pogut desar (${err.code || "error"}).`;
+  } finally {
+    $("saveCatalogBtn").disabled = false;
+  }
+});
+$("cancelCatalogBtn").addEventListener("click", resetCatalogForm);
+
 function readProducts() {
   return [...$("products").querySelectorAll(".product-row")].map(row => ({
     name: row.querySelector(".p-name").value || "Altres",
@@ -215,8 +352,19 @@ onAuthStateChanged(auth, user => {
   $("appPanel").classList.toggle("hidden", !user);
   $("logoutBtn").classList.toggle("hidden", !user);
   if (unsubscribeOrders) { unsubscribeOrders(); unsubscribeOrders = null; }
-  orders = []; renderOrders();
+  if (unsubscribeCatalog) { unsubscribeCatalog(); unsubscribeCatalog = null; }
+  orders = [];
+  catalog = [];
+  renderOrders();
+  renderCatalog();
   if (user) {
+    unsubscribeCatalog = onSnapshot(query(collection(db, "products"), orderBy("name")), snapshot => {
+      catalog = snapshot.docs.map(d => ({id:d.id, ...d.data()}));
+      renderCatalog();
+    }, err => {
+      console.error(err);
+      $("catalogList").innerHTML = `<div class="empty">No es pot carregar el catàleg (${err.code || "error"}).</div>`;
+    });
     $("ordersList").innerHTML = '<p class="muted">Carregant comandes...</p>';
     const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
     unsubscribeOrders = onSnapshot(q, snapshot => {

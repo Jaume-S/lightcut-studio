@@ -1,75 +1,45 @@
 <!doctype html>
 <html lang="ca">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#151515">
-  <title>LightCut Studio — Comandes</title>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151515"><title>LightCut Studio — Comandes</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <main class="shell">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">LIGHTCUT STUDIO</p>
-        <h1>Gestió de comandes</h1>
-      </div>
+      <div><p class="eyebrow">LIGHTCUT STUDIO</p><h1>Gestió de comandes</h1></div>
       <button id="logoutBtn" class="button secondary hidden">Tancar sessió</button>
     </header>
-
     <section id="loginPanel" class="panel login-panel">
-      <h2>Inicia sessió</h2>
-      <p class="muted">Accés privat al gestor de comandes.</p>
+      <h2>Inicia sessió</h2><p class="muted">Accés privat al gestor de comandes.</p>
       <form id="loginForm">
-        <label for="email">Correu electrònic</label>
-        <input id="email" type="email" autocomplete="username" required>
-        <label for="password">Contrasenya</label>
-        <input id="password" type="password" autocomplete="current-password" required>
-        <button class="button primary" type="submit">Entrar</button>
-        <p id="loginError" class="error" role="alert"></p>
+        <label for="email">Correu electrònic</label><input id="email" type="email" autocomplete="username" required>
+        <label for="password">Contrasenya</label><input id="password" type="password" autocomplete="current-password" required>
+        <button class="button primary" type="submit">Entrar</button><p id="loginError" class="error" role="alert"></p>
       </form>
     </section>
-
     <section id="appPanel" class="hidden">
       <div class="stats">
         <article class="stat-card"><span>Comandes</span><strong id="statCount">0</strong></article>
         <article class="stat-card"><span>Confirmades / en curs</span><strong id="statActive">0</strong></article>
         <article class="stat-card"><span>Import total registrat</span><strong id="statTotal">0,00 €</strong></article>
       </div>
-
       <section class="panel">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">REGISTRE</p>
-            <h2 id="formTitle">Nova comanda</h2>
-          </div>
-          <button id="cancelEditBtn" type="button" class="button secondary hidden">Cancel·lar edició</button>
-        </div>
+        <div class="section-heading"><div><p class="eyebrow">REGISTRE</p><h2 id="formTitle">Nova comanda</h2></div><button id="cancelEditBtn" type="button" class="button secondary hidden">Cancel·lar edició</button></div>
         <form id="orderForm">
           <input id="orderId" type="hidden">
           <div class="form-grid">
             <div><label for="client">Client *</label><input id="client" required maxlength="120" placeholder="Nom del client o empresa"></div>
             <div><label for="contact">Contacte</label><input id="contact" maxlength="160" placeholder="Correu o telèfon"></div>
-            <div><label for="eventType">Tipus d'encàrrec</label>
-              <select id="eventType">
-                <option>Casament</option><option>Esdeveniment</option><option>Empresa</option><option>Particular</option>
-              </select>
-            </div>
+            <div><label for="eventType">Tipus d'encàrrec</label><select id="eventType"><option>Casament</option><option>Esdeveniment</option><option>Empresa</option><option>Particular</option></select></div>
             <div><label for="dueDate">Data límit d'entrega</label><input id="dueDate" type="date"></div>
-            <div><label for="status">Estat</label>
-              <select id="status">
-                <option>Pendent de confirmar</option><option>Confirmada</option><option>En producció</option><option>Llista per entregar</option><option>Entregada</option><option>Cancel·lada</option>
-              </select>
-            </div>
+            <div><label for="status">Estat</label><select id="status"><option>Pendent de confirmar</option><option>Confirmada</option><option>En producció</option><option>Llista per entregar</option><option>Entregada</option><option>Cancel·lada</option></select></div>
             <div><label for="deposit">Bestreta cobrada (€)</label><input id="deposit" type="number" min="0" step="0.01" value="0"></div>
             <div><label for="shipping">Altres despeses repercutides (€)</label><input id="shipping" type="number" min="0" step="0.01" value="0"></div>
             <div><label for="vat">IVA (%)</label><select id="vat"><option value="21">21%</option><option value="10">10%</option><option value="0">0%</option></select></div>
           </div>
-
-          <div class="section-heading product-heading">
-            <h3>Productes</h3>
-            <button id="addProductBtn" type="button" class="button secondary">+ Afegir producte</button>
-          </div>
+          <div class="section-heading product-heading"><h3>Productes</h3><button id="addProductBtn" type="button" class="button secondary">+ Afegir producte</button></div>
           <div id="products"></div>
           <div class="totals">
             <div><span>Subtotal (sense IVA)</span><strong id="subtotal">0,00 €</strong></div>
@@ -79,31 +49,34 @@
             <div><span>Marge estimat abans d'altres despeses</span><strong id="margin">0,00 €</strong></div>
             <div><span>Pendent de cobrar</span><strong id="outstanding">0,00 €</strong></div>
           </div>
-          <label for="notes">Observacions</label>
-          <textarea id="notes" rows="3" maxlength="3000" placeholder="Materials, personalització, adreça d'entrega..."></textarea>
-          <div class="form-actions">
-            <button class="button primary" type="submit" id="saveBtn">Desar comanda</button>
-            <p id="formMessage" class="muted" role="status"></p>
-          </div>
+          <label for="notes">Observacions</label><textarea id="notes" rows="3" maxlength="3000" placeholder="Materials, personalització, adreça d'entrega..."></textarea>
+          <div class="form-actions"><button class="button primary" type="submit" id="saveBtn">Desar comanda</button><p id="formMessage" class="muted" role="status"></p></div>
         </form>
       </section>
 
+      <section class="panel" id="catalogPanel">
+        <div class="section-heading"><div><p class="eyebrow">CATÀLEG</p><h2>Productes habituals</h2></div></div>
+        <p class="muted">Desa aquí els preus i costos habituals. En seleccionar un producte en una comanda, s'ompliran automàticament.</p>
+        <form id="catalogForm">
+          <input id="catalogId" type="hidden">
+          <div class="form-grid">
+            <div><label for="catalogName">Nom del producte *</label><input id="catalogName" required maxlength="100" placeholder="Ex. Cake topper personalitzat"></div>
+            <div><label for="catalogPrice">Preu de venda unitari (€) *</label><input id="catalogPrice" type="number" min="0" step="0.01" value="0" required></div>
+            <div><label for="catalogCost">Cost unitari estimat (€)</label><input id="catalogCost" type="number" min="0" step="0.01" value="0"></div>
+            <div><label for="catalogDescription">Descripció / notes</label><input id="catalogDescription" maxlength="300" placeholder="Material, mida, acabat..."></div>
+          </div>
+          <div class="form-actions"><button class="button primary" id="saveCatalogBtn" type="submit">Afegir al catàleg</button><button class="button secondary hidden" id="cancelCatalogBtn" type="button">Cancel·lar edició</button><p id="catalogMessage" class="muted" role="status"></p></div>
+        </form>
+        <div id="catalogList" class="catalog-list"><p class="muted">Carregant catàleg...</p></div>
+      </section>
+
       <section class="panel">
-        <div class="section-heading">
-          <div><p class="eyebrow">HISTORIAL</p><h2>Comandes desades</h2></div>
-          <input id="search" class="search" placeholder="Cercar client o número...">
-        </div>
-        <div class="filters">
-          <label for="statusFilter">Filtrar per estat</label>
-          <select id="statusFilter">
-            <option value="">Tots els estats</option><option>Pendent de confirmar</option><option>Confirmada</option><option>En producció</option><option>Llista per entregar</option><option>Entregada</option><option>Cancel·lada</option>
-          </select>
-        </div>
+        <div class="section-heading"><div><p class="eyebrow">HISTORIAL</p><h2>Comandes desades</h2></div><input id="search" class="search" placeholder="Cercar client o número..."></div>
+        <div class="filters"><label for="statusFilter">Filtrar per estat</label><select id="statusFilter"><option value="">Tots els estats</option><option>Pendent de confirmar</option><option>Confirmada</option><option>En producció</option><option>Llista per entregar</option><option>Entregada</option><option>Cancel·lada</option></select></div>
         <div id="ordersList" class="orders-list"><p class="muted">Carregant comandes...</p></div>
       </section>
     </section>
     <footer>LightCut Studio · Gestor intern · Les dades es desen a Firebase</footer>
   </main>
   <script type="module" src="./app.js"></script>
-</body>
-</html>
+</body></html>
