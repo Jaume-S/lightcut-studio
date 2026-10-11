@@ -208,9 +208,16 @@ function totals(products = readProducts()) {
   const vatRate = Math.max(0, Number($("vat").value) || 0) / 100;
   const vatAmount = subtotal * vatRate;
   const total = subtotal + vatAmount;
-  const cost = products.reduce((s,p) => s + p.quantity*p.unitCost, 0);
+  const productCost = products.reduce((s,p) => s + p.quantity*p.unitCost, 0);
+  const laborHours = Math.max(0, Number($("laborHours").value) || 0);
+  const hourlyRate = Math.max(0, Number($("hourlyRate").value) || 0);
+  const laborCost = laborHours * hourlyRate;
+  const otherCosts = Math.max(0, Number($("otherCosts").value) || 0);
+  const fullCost = productCost + laborCost + otherCosts;
   const deposit = Math.max(0, Number($("deposit").value) || 0);
-  return {subtotal, vatRate: vatRate, vatAmount, total, cost, margin: productSubtotal-cost, outstanding: total-deposit};
+  const margin = subtotal - fullCost;
+  const marginPercent = subtotal > 0 ? margin / subtotal * 100 : 0;
+  return {subtotal, vatRate: vatRate, vatAmount, total, cost: productCost, laborHours, hourlyRate, laborCost, otherCosts, fullCost, margin, marginPercent, outstanding: total-deposit};
 }
 function updateTotals() {
   const t = totals();
@@ -218,10 +225,14 @@ function updateTotals() {
   $("vatAmount").textContent = money(t.vatAmount);
   $("grandTotal").textContent = money(t.total);
   $("costTotal").textContent = money(t.cost);
+  $("laborTotal").textContent = money(t.laborCost);
+  $("otherCostTotal").textContent = money(t.otherCosts);
+  $("fullCostTotal").textContent = money(t.fullCost);
   $("margin").textContent = money(t.margin);
+  $("marginPercent").textContent = `${t.marginPercent.toLocaleString("ca-ES", {minimumFractionDigits:1, maximumFractionDigits:1})}%`;
   $("outstanding").textContent = money(t.outstanding);
 }
-["shipping","vat","deposit"].forEach(id => $(id).addEventListener("input", updateTotals));
+["shipping","vat","deposit","laborHours","hourlyRate","otherCosts"].forEach(id => $(id).addEventListener("input", updateTotals));
 
 function resetForm() {
   $("orderForm").reset();
@@ -245,13 +256,21 @@ function formData() {
     status: $("status").value,
     deposit: Math.max(0, Number($("deposit").value) || 0),
     extraCharges: Math.max(0, Number($("shipping").value) || 0),
+    laborHours: t.laborHours,
+    hourlyRate: t.hourlyRate,
+    laborCost: Number(t.laborCost.toFixed(2)),
+    otherCosts: t.otherCosts,
     vatRate: t.vatRate,
     products,
     subtotal: Number(t.subtotal.toFixed(2)),
     vatAmount: Number(t.vatAmount.toFixed(2)),
     total: Number(t.total.toFixed(2)),
-    estimatedCost: Number(t.cost.toFixed(2)),
+    estimatedCost: Number(t.fullCost.toFixed(2)),
+    productCost: Number(t.cost.toFixed(2)),
+    estimatedLaborCost: Number(t.laborCost.toFixed(2)),
+    estimatedOtherCosts: Number(t.otherCosts.toFixed(2)),
     estimatedMargin: Number(t.margin.toFixed(2)),
+    estimatedMarginPercent: Number(t.marginPercent.toFixed(2)),
     outstanding: Number(t.outstanding.toFixed(2)),
     notes: $("notes").value.trim(),
     updatedAt: serverTimestamp()
@@ -307,6 +326,9 @@ function editOrder(order) {
   $("status").value = order.status || statuses[0];
   $("deposit").value = order.deposit ?? 0;
   $("shipping").value = order.extraCharges ?? 0;
+  $("laborHours").value = order.laborHours ?? 0;
+  $("hourlyRate").value = order.hourlyRate ?? 0;
+  $("otherCosts").value = order.otherCosts ?? 0;
   $("vat").value = String(Math.round((order.vatRate ?? .21)*100));
   $("notes").value = order.notes || "";
   $("products").innerHTML = "";
